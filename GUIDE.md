@@ -1,12 +1,17 @@
 # Build Guide — F1 Pit Strategy Monte Carlo Simulation
 
-This is your plan, not a solution. Each step explains the concept, tells
-you what the file needs to do, and gives you a checkpoint to confirm it
-works — but you write the code. The `TODO`s in `src/*.py` mark exactly
-where your work goes. When you're stuck on *how* to write something (not
-*what* it should do), ask me and I'll explain the technique or point you
-at the relevant Python feature — I won't fill in the logic for you unless
-you explicitly ask for the answer.
+This is your plan, not a solution — you type every line yourself. Step 1
+below is broken into very small numbered pieces (1.1, 1.2, 1.3...), each
+just a few lines, each with something to run immediately afterward to
+check it worked before you move on. Steps 2–4 are written in a denser
+style for now — once you finish Step 1, tell me and I'll rewrite Step 2
+the same granular way rather than have you read ahead through something
+not yet broken down.
+
+When you're stuck on *how* to write something (not *what* it should do),
+tell me exactly where and what happened (the error message, or "nothing
+printed") — I'll explain the concept or point at the bug, not hand you
+the fixed line, unless you ask outright for the answer.
 
 Work through the steps in order. Each one only needs what came before it.
 
@@ -33,66 +38,203 @@ exactly what `lap_time()` needs to do without telling you how.
 
 ## Step 1 — Tire degradation (`src/tires.py`)
 
-### The concept
+You're basic at coding and want this like-a-baby step by step — good,
+that's exactly how this section is written. Don't skip ahead. Do each
+numbered step, run the check that follows it, and only move on once it
+works. Every step is a handful of lines, never more.
 
-A strategist's whole job comes down to one trade-off: soft tires are fast
-when fresh but wear out quickly; hard tires are slower but last. You need
-a function that, given a compound and how many laps it's been used, tells
-you how long a lap takes.
+Open `src/tires.py` and `tests/test_tires.py` side by side. Work in
+`tires.py`. Use a terminal in the project folder for the checks.
 
-**Why a `dataclass`?** You need a small bundle of related values (name,
-base pace, degradation rate) with no real behavior of its own — that's
-exactly what `@dataclass` is for: it gives you a clean constructor and
-readable repr for free, instead of a bare class with a hand-written
-`__init__`. If you haven't used one, read the first example in the
-[dataclasses docs](https://docs.python.org/3/library/dataclasses.html) —
-don't copy the fields, just the pattern.
+### 1.1 — One fixed number
 
-**Why pass an `rng` object instead of calling `random.gauss()` directly?**
-Python's `random` module has a global random state, shared by your whole
-program. If every function pulls from that global state, you can't
-reproduce a specific run — which matters a lot once you're comparing
-strategies (Step 4) and want "strategy A vs strategy B, same random
-conditions" to be a fair comparison. A `random.Random(seed)` instance is
-an independent random stream you control explicitly. Get used to threading
-it through function calls now — it'll matter more later.
+At the top of `tires.py` (below the `import random` line), write:
 
-**Why should noise grow with tire age?** A fresh tire is predictable; a
-worn one is not — a strategist trusts an early pit window more than a
-late one for exactly this reason. Encoding that (noise scales with age)
-is a small modeling choice that makes the simulation's behavior match
-real intuition, and it's worth being able to explain *why* you made it,
-not just that you did.
-
-### What to build
-
-1. Fill in `TireCompound` — name, base lap time, degradation rate, and a
-   term controlling how much noise grows with age.
-2. Define `SOFT`, `MEDIUM`, `HARD` and a `COMPOUNDS` dict.
-3. Write `lap_time(compound, tire_age_laps, rng)`: deterministic
-   base-pace-plus-degradation, plus `rng.gauss(0, some_std_dev)` noise.
-   Start with **linear** degradation (`deg_rate * tire_age_laps`) — that's
-   deliberate, see `ROADMAP.md` Level 2 for why we upgrade it later.
-
-### Checkpoint
-
-```bash
-pytest tests/test_tires.py -v
+```python
+SOFT_BASE_LAPTIME = 92.0
 ```
-All three tests should pass. If `test_softs_start_faster_than_hards`
-fails, check your SOFT/HARD numbers. If
-`test_lap_time_degrades_with_tire_age_on_average` fails, check your
-degradation term's sign.
 
-Also sanity-check it by eye — in a Python shell:
+That's it. This is the time (in seconds) for one lap on a *brand new*
+Soft tire, before any wear. Save the file.
+
+**Check:** run `python` in your terminal (this opens an interactive
+Python shell — you type code and it runs immediately, line by line, so
+you can poke at things as you build). Then type:
+```python
+from tires import SOFT_BASE_LAPTIME
+print(SOFT_BASE_LAPTIME)
+```
+It should print `92.0`. Type `exit()` to leave the shell. If you get an
+error, read it — it will tell you the line and what's wrong (a typo,
+usually). Don't move on until this works.
+
+### 1.2 — Turn it into a function
+
+A function lets you compute something instead of just storing one fixed
+value. Add this below what you just wrote:
+
+```python
+def soft_lap_time():
+    return SOFT_BASE_LAPTIME
+```
+
+**Check:** back in `python`:
+```python
+from tires import soft_lap_time
+print(soft_lap_time())
+```
+Should print `92.0` again — same number, but now it comes from calling a
+function instead of reading a variable directly. That distinction matters
+in a second.
+
+### 1.3 — Make the tire wear out
+
+Right now the function always returns the same number, no matter how old
+the tire is — that's not useful yet. A function can take **inputs**
+(called parameters) so it can compute something different each time.
+
+Rewrite `soft_lap_time` to take one input — how many laps the tire has
+already done — and add a small time penalty for each lap of wear:
+
+```python
+def soft_lap_time(tire_age_laps):
+    degradation_per_lap = 0.15   # seconds lost per lap of wear — a guess for now
+    return SOFT_BASE_LAPTIME + degradation_per_lap * tire_age_laps
+```
+
+Read that math left to right: fresh-tire pace, plus (wear-per-lap times
+how many laps of wear). At `tire_age_laps = 0` you should get exactly the
+base time back.
+
+**Check:**
+```python
+from tires import soft_lap_time
+print(soft_lap_time(0))    # should be 92.0
+print(soft_lap_time(10))   # should be higher than 92.0
+print(soft_lap_time(20))   # should be higher still
+```
+If the numbers go *up* as tire age goes up, you've got it. If they don't
+move, check you're actually using `tire_age_laps` in the formula.
+
+### 1.4 — Handle three compounds, not just one
+
+Writing a separate function per compound (`soft_lap_time`,
+`medium_lap_time`, `hard_lap_time`) would mean repeating the same formula
+three times. Instead, group each compound's numbers into a **dictionary**
+— a way to store several named values together, like a small labeled box.
+You've likely seen these in your CS coursework even if you haven't used
+one much:
+
+```python
+SOFT = {"name": "Soft", "base_laptime": 92.0, "deg_rate": 0.15}
+```
+
+Delete the `SOFT_BASE_LAPTIME` variable and `soft_lap_time` function from
+the earlier steps — this replaces them. Now add `MEDIUM` and `HARD` the
+same way. Medium should have a slightly slower `base_laptime` than Soft
+and a slightly lower `deg_rate` (it wears more slowly) — Hard slower and
+lower still. Exact numbers don't matter yet, just the ordering:
+Soft fastest-but-wears-fastest, Hard slowest-but-longest-lasting.
+
+Then write **one** function that works for any compound, by reading its
+values out of the dictionary with square brackets:
+
+```python
+def lap_time(compound, tire_age_laps):
+    return compound["base_laptime"] + compound["deg_rate"] * tire_age_laps
+```
+
+**Check:**
+```python
+from tires import SOFT, HARD, lap_time
+print(lap_time(SOFT, 0))     # should be SOFT's base_laptime
+print(lap_time(HARD, 0))     # should be HARD's base_laptime, and higher than SOFT's
+print(lap_time(SOFT, 20))    # should be noticeably higher than lap_time(SOFT, 0)
+```
+
+### 1.5 — Add randomness
+
+Real lap times aren't perfectly predictable — there's always some small
+variation. This is also the piece that will let us run a *Monte Carlo*
+simulation later (many random trials instead of one fixed answer), so
+it's worth getting comfortable with `random` now, on something simple.
+
+Try this first in a throwaway Python shell, unrelated to your file, just
+to see how it behaves:
+```python
+import random
+rng = random.Random(0)     # a controlled source of randomness, seeded with 0
+print(rng.gauss(0, 1))     # a random number centered on 0, "spread" of 1
+print(rng.gauss(0, 1))     # a different random number, same shell
+```
+Run those two `gauss` lines a few times (restart Python between attempts,
+same seed `0`) — you'll notice you get the *same sequence* every time you
+use seed `0`. That's the point of seeding: reproducible randomness. We
+use `random.Random(0)` instead of plain `random.gauss(...)` specifically
+so we can control and repeat this later — don't worry about why that
+matters yet, Step 3 explains it.
+
+Now update `lap_time` in `tires.py` to accept that `rng` and add a bit of
+random noise to the result:
+
+```python
+def lap_time(compound, tire_age_laps, rng):
+    predictable_part = compound["base_laptime"] + compound["deg_rate"] * tire_age_laps
+    noise = rng.gauss(0, 0.1)
+    return predictable_part + noise
+```
+
+Notice `lap_time` now takes **three** inputs instead of two — you'll need
+to pass an `rng` every time you call it from now on.
+
+**Check:**
 ```python
 import random
 from tires import SOFT, lap_time
 rng = random.Random(0)
-for age in [0, 10, 20, 30]:
-    print(age, lap_time(SOFT, age, rng))
+print(lap_time(SOFT, 0, rng))
+print(lap_time(SOFT, 0, rng))
+print(lap_time(SOFT, 0, rng))
 ```
-The numbers should trend upward as age increases, with some jitter.
+Same inputs (`SOFT`, age `0`), but three different outputs, each close to
+92 but not exactly — that's the noise working.
+
+### 1.6 — One last refinement: shakier tires get noisier
+
+A well-worn tire is less predictable lap-to-lap than a fresh one — real
+strategists trust an early pit window more than a late one partly for
+this reason. Make the noise grow with tire age instead of always being
+`0.1`:
+
+```python
+def lap_time(compound, tire_age_laps, rng):
+    predictable_part = compound["base_laptime"] + compound["deg_rate"] * tire_age_laps
+    noise_size = 0.02 * max(tire_age_laps, 1)
+    noise = rng.gauss(0, noise_size)
+    return predictable_part + noise
+```
+
+(`max(tire_age_laps, 1)` just avoids a noise size of exactly zero at
+brand-new tire age — a small technicality, not worth dwelling on.)
+
+### Step 1 final checkpoint
+
+Run the test file that came with the project — it checks the behaviors
+above automatically instead of you eyeballing numbers each time:
+
+```bash
+pytest tests/test_tires.py -v
+```
+
+You should see **3 passed**. If something fails, the test name tells you
+which behavior is broken (e.g. `test_softs_start_faster_than_hards` means
+go re-check your SOFT vs HARD numbers). Paste me the failure if you're
+stuck for more than a few minutes — that's exactly what I'm here for.
+
+Once this passes: **stop and tell me.** I'll walk you through Step 2 the
+same way, broken into the same size steps — no need to read ahead in this
+guide, Step 2 as currently written is the denser "advanced" version I'll
+replace once you get there.
 
 ---
 
