@@ -19,12 +19,46 @@ Work through the steps in order. Each one only needs what came before it.
 
 ## Step 0 — Setup
 
+All of Step 0 happens in **Terminal** (Mac) or **Command Prompt/PowerShell**
+(Windows) — an app for typing text commands instead of clicking, not your
+code editor. Here's exactly where:
+
+1. **Get the folder somewhere you can find it.** If you downloaded
+   `f1-strategy-sim.zip`, it's probably in your Downloads folder. Double-click
+   it to unzip — you'll get a plain folder called `f1-strategy-sim`. Move
+   that folder somewhere sensible if you like (e.g. Desktop), or just leave
+   it in Downloads.
+2. **Open Terminal.** Mac: `Cmd + Space`, type `Terminal`, hit Enter.
+   Windows: search `Command Prompt` in the Start menu.
+3. **Navigate into the folder** using `cd` (change directory). If the
+   folder is in Downloads:
+   ```bash
+   cd Downloads/f1-strategy-sim
+   ```
+   Then confirm you're in the right place:
+   ```bash
+   pwd    # prints the folder you're currently in
+   ls     # Windows: dir — lists files; you should see README.md, GUIDE.md, src, tests
+   ```
+   If `ls`/`dir` doesn't show those files, you're in the wrong folder —
+   check the path and try again.
+4. **Now run the setup commands below, in that same Terminal window**, one
+   at a time, pressing Enter after each:
+
 ```bash
-cd f1-strategy-sim
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+You'll also want a code editor to actually write `tires.py` and the other
+files in — a plain text editor works in a pinch, but
+[VS Code](https://code.visualstudio.com) (free) is the standard choice and
+worth installing now if you don't have one. Once installed, open the whole
+`f1-strategy-sim` folder in it (File → Open Folder) and edit files there —
+but keep doing the `python`/`pytest` checks in the Terminal window from
+step 2 above, not inside VS Code, unless you already know how to use its
+built-in terminal.
 
 Confirm it's wired up:
 ```bash
@@ -240,67 +274,178 @@ replace once you get there.
 
 ## Step 2 — Simulate one race (`src/race.py`)
 
-### The concept
+Same deal as Step 1: small numbered pieces, check after each, don't skip
+ahead. Open `src/race.py` and `tests/test_race.py` side by side.
 
-A **strategy** is a sequence of stints: `[("Medium", 20), ("Hard", 38)]`
-means 20 laps on Mediums, pit, then 38 laps on Hards. This is a **1-stop**
-strategy — one pit stop. `[("Soft", 15), ("Soft", 15), ("Hard", 28)]` is a
-**2-stop**.
+### 2.1 — What a "strategy" is
 
-Two real F1 terms worth knowing, because they explain why pit timing
-itself is strategic, not just tire-driven:
-- **Undercut**: pitting *before* a rival, so your fresh tires are faster
-  than their old ones for the laps immediately after — you gain track
-  position without passing on-track.
-- **Overcut**: the opposite — staying out longer than a rival, banking
-  faster laps than they can on their newly-fresh-but-not-yet-quick tires
-  right after a stop.
-This simulation (Level 1) doesn't model rival cars yet, so it can't
-capture undercut/overcut directly — that's Level 4 in `ROADMAP.md`. But
-it's worth knowing the terms now since they're exactly what a real
-strategist means by "pit strategy."
+A race strategy is just: which tire, for how many laps, then which tire
+next, and so on. We'll write that as a **list of tuples**. A tuple is a
+small fixed-size group of values — here, one compound name paired with
+how many laps it runs. A list holds several of them in order.
 
-**Why randomize the pit stop cost?** A real pit stop varies — crew
-execution, timing precision. Modeling it as fixed would hide a real
-source of risk that strategists have to weigh (a strategy needing more
-stops is more exposed to a bad one).
+Try this in a scratch Python shell (not in `race.py` yet) to get
+comfortable with it:
+```python
+strategy = [("Medium", 20), ("Hard", 38)]
+print(strategy[0])        # the first stint: ("Medium", 20)
+print(strategy[0][0])     # "Medium" — the compound name
+print(strategy[0][1])     # 20 — how many laps
+print(len(strategy))      # 2 — this strategy has 2 stints
+```
+Run each line, see what prints. `[0]` means "the first item," `[0][0]`
+means "the first item, then the first thing inside *that*." That's the
+whole strategy data structure — no more to it.
 
-**Why does a safety car make pitting cheaper?** Under a safety car the
-whole field slows down, so the *relative* time you lose by diving into
-the pits is much smaller than under green-flag racing. This is why real
-strategists react live to a safety car rather than only planning
-pre-race — it can flip the optimal strategy instantly.
+### 2.2 — Add laps up for one stint
 
-### What to build
+Open `src/race.py`. At the top, import what you built in Step 1:
+```python
+from tires import COMPOUNDS, lap_time
+```
+(`COMPOUNDS` is the dict of `SOFT`/`MEDIUM`/`HARD` you made in Step 1.4 —
+if you called it something else, use that name instead.)
 
-`simulate_race(strategy, rng, safety_car_lap=None) -> float`:
-1. Loop over each `(compound_name, stint_length)` in `strategy`.
-2. For each lap of that stint (tire age `0` to `stint_length - 1`), add
-   `lap_time(...)` to a running total.
-3. After every stint *except the last*, add a pit stop cost:
-   `rng.gauss(PIT_STOP_MEAN, PIT_STOP_STD)`. If `safety_car_lap` is set
-   and the current lap is close to it, reduce the cost (e.g. multiply by
-   something less than 1).
-4. Return the total.
+Now write a small throwaway script below it — not a function yet, just
+plain code — that adds up the lap times for **one** stint only:
 
-Pick your own `PIT_STOP_MEAN` / `PIT_STOP_STD` — real F1 stops (including
-pit lane transit) lose roughly 20–25 seconds; exact realism matters less
-right now than having a value that makes strategies with more stops
-visibly cost more.
+```python
+import random
 
-### Checkpoint
+rng = random.Random(0)
+compound = COMPOUNDS["Medium"]
 
-In a Python shell:
+total_time = 0.0
+for tire_age in range(20):
+    total_time += lap_time(compound, tire_age, rng)
+
+print(total_time)
+```
+
+**Check:** run `python race.py` in your terminal. You should get one
+number, roughly `20 laps × ~93 seconds ≈ 1860`, a bit higher because of
+degradation. If you get an error about `lap_time` needing 3 arguments,
+check you're passing `rng` — that's the same `rng` idea from Step 1.5.
+
+### 2.3 — Loop over *every* stint, not just one
+
+Real strategies have more than one stint. Replace the single `compound =
+...` / `for tire_age in range(20)` block with a loop **around** that loop
+— for each stint in the strategy, then for each lap in that stint:
+
+```python
+strategy = [("Medium", 20), ("Hard", 38)]
+
+total_time = 0.0
+for compound_name, stint_length in strategy:
+    compound = COMPOUNDS[compound_name]
+    for tire_age in range(stint_length):
+        total_time += lap_time(compound, tire_age, rng)
+
+print(total_time)
+```
+
+Notice `for compound_name, stint_length in strategy:` — this pulls each
+tuple apart automatically into two names in one line, same idea as
+`strategy[0][0]` and `strategy[0][1]` from 2.1, just written more
+conveniently.
+
+**Check:** run `python race.py` again. The number should now be roughly
+the sum of *both* stints' worth of laps (58 laps total here), noticeably
+bigger than 2.2's result, and with no pit stop added yet.
+
+### 2.4 — Add the pit stop
+
+Pitting costs time — and it's not exactly the same every time (a real
+pit crew isn't perfectly consistent), so we model it with a bit of
+randomness too, same `rng.gauss(...)` idea as tire noise in Step 1.5.
+
+Add these two lines above your loop:
+```python
+PIT_STOP_MEAN = 22.0   # average seconds lost in a pit stop
+PIT_STOP_STD = 1.5     # how much that varies stop to stop
+```
+
+Then, inside your `for compound_name, stint_length in strategy:` loop,
+**after** the inner lap loop finishes, add a pit stop — but only if this
+isn't the *last* stint (you don't pit after your final stint, the race is
+just over):
+
+```python
+strategy = [("Medium", 20), ("Hard", 38)]
+
+total_time = 0.0
+for i, (compound_name, stint_length) in enumerate(strategy):
+    compound = COMPOUNDS[compound_name]
+    for tire_age in range(stint_length):
+        total_time += lap_time(compound, tire_age, rng)
+
+    is_last_stint = (i == len(strategy) - 1)
+    if not is_last_stint:
+        total_time += rng.gauss(PIT_STOP_MEAN, PIT_STOP_STD)
+
+print(total_time)
+```
+
+New thing here: `enumerate(strategy)` gives you the stint's position (`i`
+— 0, 1, 2...) alongside the stint itself, so you can tell whether you're
+on the last one. `i == len(strategy) - 1` just means "is `i` the index of
+the final item in the list."
+
+**Check:** run it again. The number should now be roughly 22 seconds
+higher than Step 2.3's result — that's your one pit stop.
+
+### 2.5 — Turn it into a reusable function
+
+Right now this only works for one hardcoded strategy sitting in the
+script. Wrap it into a function so you can call it with *any* strategy,
+same pattern as `lap_time` in Step 1:
+
+```python
+def simulate_race(strategy, rng):
+    total_time = 0.0
+    for i, (compound_name, stint_length) in enumerate(strategy):
+        compound = COMPOUNDS[compound_name]
+        for tire_age in range(stint_length):
+            total_time += lap_time(compound, tire_age, rng)
+
+        is_last_stint = (i == len(strategy) - 1)
+        if not is_last_stint:
+            total_time += rng.gauss(PIT_STOP_MEAN, PIT_STOP_STD)
+
+    return total_time
+```
+
+Delete the loose script code from 2.2–2.4 (the `strategy = ...` line and
+everything below it that isn't inside the function) — the function
+replaces it. Keep the `PIT_STOP_MEAN`/`PIT_STOP_STD` lines and the
+`from tires import ...` line at the top of the file, outside the function.
+
+**Check:**
 ```python
 import random
 from race import simulate_race
 rng = random.Random(0)
 print(simulate_race([("Medium", 20), ("Hard", 38)], rng))
+print(simulate_race([("Medium", 20), ("Hard", 38)], rng))
 ```
-Should return a single float in the low thousands of seconds (58 laps ×
-~90s/lap + one pit stop ≈ 5300s). Run it a few times with different seeds
-— you should see it vary, but stay in a plausible range. If it's wildly
-off, check you're summing correctly and not double-counting the pit stop.
+Two calls, two different (but similar) numbers — same as with `lap_time`,
+the randomness means every call is a fresh "simulated race."
+
+### Step 2 checkpoint
+
+```bash
+pytest tests/test_race.py -v
+```
+Three checks: that the same seed reproduces the same result, that more
+laps takes more time, and that a strategy with an extra pit stop takes
+longer than one with the same total laps but fewer stops. All should
+pass. Tell me once they do and I'll do Step 3 (the Monte Carlo part —
+this is where it starts getting genuinely interesting) the same granular
+way.
+
+*(There's a `safety_car_lap` idea mentioned further down this guide for a
+later, optional stretch — ignore it for now, it's not needed to move on.)*
 
 ---
 
