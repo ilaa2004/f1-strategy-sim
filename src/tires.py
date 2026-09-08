@@ -31,6 +31,12 @@ SOFT = {"name": "Soft", "base_lap_time": 92.0, "degradation_per_lap": 0.15}
 MEDIUM = {"name": "Medium", "base_lap_time": 93.0, "degradation_per_lap": 0.10}
 HARD = {"name": "Hard", "base_lap_time": 94.0, "degradation_per_lap": 0.05}
 
+COMPOUNDS = {
+    "Soft": SOFT,
+    "Medium": MEDIUM,
+    "Hard": HARD
+}
+
 def lap_time(compound, tire_age_laps, rng):
     predictable_part = compound["base_lap_time"] + compound["degradation_per_lap"] * tire_age_laps
     noise_size = 0.02 * max(tire_age_laps, 1) # Standard deviation of the noise
