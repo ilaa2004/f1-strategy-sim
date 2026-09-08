@@ -18,8 +18,7 @@ import random
 
 rng = random.Random(0)  # a controlled source of randomness, seeded with 0
 
-print(simulate_race([("Medium", 3), ("Hard", 25), ("Medium", 25)], rng)) # a list of tuples that represent the tire compound and the number of laps to run on that compound
-print(simulate_race([("Medium", 3), ("Hard", 50)], rng))
+
 
 PIT_STOP_MEAN = 22.0 #the average time it takes to make a pit stop, in seconds
 
@@ -35,11 +34,13 @@ def simulate_race(strategy, rng):
         
         is_last_stint = (i == len(strategy) - 1) # a variable that checks if the current stint is the last stint in the strategy list
         if not is_last_stint: # if the current stint is not the last stint in the strategy list, add a pit stop time to the total time
-            pit_stop_time = rng.gauss(PIT_STOP_MEAN, PIT_STOP_STDDEV) # a variable that generates a random pit stop time using a Gaussian distribution with the mean and standard deviation defined above
-            total_time += pit_stop_time # adds the pit stop time to the total time
+           pit_stop_time = rng.gauss(PIT_STOP_MEAN, PIT_STOP_STDDEV) # a variable that generates a random pit stop time using a Gaussian distribution with the mean and standard deviation defined above
+           total_time += pit_stop_time # adds the pit stop time to the total time
 
     return total_time
 
+print(simulate_race([("Hard", 3),("Medium", 25), ("Medium", 25)], rng)) # a list of tuples that represent the tire compound and the number of laps to run on that compound
+print(simulate_race([("Medium", 3), ("Hard", 50)], rng))
 
 
 # --- Step 2.5 will wrap that script into a reusable simulate_race()
