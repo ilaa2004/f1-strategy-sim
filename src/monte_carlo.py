@@ -16,19 +16,20 @@ from race import simulate_race
 
 
 def run_monte_carlo(strategy, n_simulations=5000, safety_car_probability=0.25, seed=None):
-    """
-    Run `n_simulations` independent simulated races for one strategy.
-    Return the list of total race times.
+   rng= random.Random(seed)  # a controlled source of randomness, seeded with seed
+   result = []
 
-    TODO:
-      1. Create an rng = random.Random(seed) — one rng, reused across all
-         simulations (GUIDE.md Step 3 explains why this matters for
-         reproducibility).
-      2. For each simulation: randomly decide (using safety_car_probability)
-         whether a safety car happens this race, and if so on what lap.
-      3. Call simulate_race() and collect the result.
-    """
-    raise NotImplementedError
+   for n in range(n_simulations):
+       safety_car_happens = rng.random() < safety_car_probability
+       if safety_car_happens:
+           safety_car_lap = rng.randint(1, 53)  # randomly choose a lap for the safety car
+       else:
+           safety_car_lap = None  # no safety car
+   
+       stimulate_result = simulate_race(strategy, rng)
+       result.append(stimulate_result)   # call simulate
+
+   return result
 
 
 def summarize(name, results):
