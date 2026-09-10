@@ -18,22 +18,43 @@ from monte_carlo import run_monte_carlo, summarize
 # and a 2-stop. Make sure the lap counts in each strategy sum to the same
 # total (so comparisons are fair) — pick a race distance, e.g. 58 laps.
 STRATEGIES = {
-    # "1-stop (Medium/Hard)": [("Medium", 20), ("Hard", 38)],
+     "1-stop (Medium/Hard)": [("Medium", 3), ("Hard", 25)],
+     "2-stop (Medium/Hard/Medium)": [("Medium", 3), ("Hard", 25), ("Medium", 25)],
 }
 
 N_SIMULATIONS = 5000
 
 
 def main():
-    # TODO:
+        stat1_wins = 0
+        stat2_wins = 0
+   
     #   1. For each strategy: run_monte_carlo(), store results, print
     #      summarize() output.
+        stat1_results = run_monte_carlo(STRATEGIES["1-stop (Medium/Hard)"], n_simulations=N_SIMULATIONS)
+        stat2_results = run_monte_carlo(STRATEGIES["2-stop (Medium/Hard/Medium)"], n_simulations=N_SIMULATIONS)
+
+        print(summarize('1-stop', stat1_results))
+        print(summarize('2-stop', stat2_results))
     #   2. Compute win probability: for each simulation index i, which
     #      strategy had the lowest time at that same index? (GUIDE.md
     #      Step 4 explains why comparing "by index" matters here.)
+        for i in range(N_SIMULATIONS):
+            if stat1_results[i] < stat2_results[i]:
+                stat1_wins += 1
+            else:
+                stat2_wins += 1
     #   3. Plot overlapping histograms of each strategy's results with
     #      matplotlib and save to strategy_comparison.png.
-    raise NotImplementedError
+        ax = plt.subplot(111)
+        ax.hist(stat1_results, bins=50, alpha=0.5, label="1-stop (Medium/Hard)")
+        ax.hist(stat2_results, bins=50, alpha=0.5, label="2-stop (Medium/Hard/Medium)")
+        ax.set_xlabel("Race Time (seconds)")
+        ax.set_ylabel("Frequency")
+        ax.set_title("Race Time Distribution by Strategy")
+        ax.legend()
+        plt.savefig("strategy_comparison.png")  
+        
 
 
 if __name__ == "__main__":
