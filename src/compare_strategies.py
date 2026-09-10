@@ -18,7 +18,7 @@ from monte_carlo import run_monte_carlo, summarize
 # and a 2-stop. Make sure the lap counts in each strategy sum to the same
 # total (so comparisons are fair) — pick a race distance, e.g. 58 laps.
 STRATEGIES = {
-     "1-stop (Medium/Hard)": [("Medium", 3), ("Hard", 25)],
+     "1-stop (Medium/Hard)": [("Medium", 3), ("Hard", 50)],
      "2-stop (Medium/Hard/Medium)": [("Medium", 3), ("Hard", 25), ("Medium", 25)],
 }
 
@@ -44,6 +44,9 @@ def main():
                 stat1_wins += 1
             else:
                 stat2_wins += 1
+
+        print(f"1-stop wins: {stat1_wins}")
+        print(f"2-stop wins: {stat2_wins}")        
     #   3. Plot overlapping histograms of each strategy's results with
     #      matplotlib and save to strategy_comparison.png.
         ax = plt.subplot(111)
