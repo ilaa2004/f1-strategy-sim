@@ -26,19 +26,25 @@ def run_monte_carlo(strategy, n_simulations=5000, safety_car_probability=0.25, s
        else:
            safety_car_lap = None  # no safety car
    
-       stimulate_result = simulate_race(strategy, rng)
+       stimulate_result = simulate_race(strategy, rng, safety_car_lap)
        result.append(stimulate_result)   # call simulate
 
    return result
 
 
 def summarize(name, results):
-    """
-    Turn a list of race times into the summary stats a strategist cares
-    about: mean, median, std dev, and 10th/90th percentile outcomes.
 
-    TODO: use the `statistics` module. For percentiles, sort the results
-    and index into them (GUIDE.md Step 3 shows the formula if you get stuck).
-    Return a dict.
-    """
-    raise NotImplementedError
+   mean_time = statistics.mean(results)
+   median_time = statistics.median(results)
+   stdev_time = statistics.stdev(results)  
+
+   tenth_percentile = sorted(results)[int(0.10 * len(results))]  # 10th percentile
+   ninetieth_percentile = sorted(results)[int(0.90 * len(results))]  # 90th percentile
+   return {
+       "name": name,
+       "mean": mean_time,
+       "median": median_time,
+       "stdev": stdev_time,
+       "10th_percentile": tenth_percentile,
+       "90th_percentile": ninetieth_percentile
+   }
