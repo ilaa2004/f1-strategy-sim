@@ -36,15 +36,18 @@ def summarize(name, results):
 
    mean_time = statistics.mean(results)
    median_time = statistics.median(results)
-   stdev_time = statistics.stdev(results)  
+   std_time = statistics.stdev(results)  
 
-   tenth_percentile = sorted(results)[int(0.10 * len(results))]  # 10th percentile
-   ninetieth_percentile = sorted(results)[int(0.90 * len(results))]  # 90th percentile
+   p10 = sorted(results)[int(0.10 * len(results))]  # 10th percentile
+   p90 = sorted(results)[int(0.90 * len(results))]  # 90th percentile
+   percentile_range = p90 / p10
    return {
        "name": name,
        "mean": mean_time,
        "median": median_time,
-       "stdev": stdev_time,
-       "10th_percentile": tenth_percentile,
-       "90th_percentile": ninetieth_percentile
+       "std": std_time,
+       "p10": p10,
+       "p90": p90,
+       "percentile": percentile_range
+      
    }
