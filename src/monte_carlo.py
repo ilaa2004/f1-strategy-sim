@@ -13,21 +13,22 @@ import random
 import statistics
 
 from race import simulate_race
+from tracks import TRACKS
 
 
-def run_monte_carlo(strategy, n_simulations=5000, safety_car_probability=0.25, seed=None):
+def run_monte_carlo(strategy, chosen_track, n_simulations=5000, safety_car_probability=0.25, seed=None):
    rng= random.Random(seed)  # a controlled source of randomness, seeded with seed
    result = []
 
    for n in range(n_simulations):
        safety_car_happens = rng.random() < safety_car_probability
        if safety_car_happens:
-           safety_car_lap = rng.randint(1, 53)  # randomly choose a lap for the safety car
+           safety_car_lap = rng.randint(1, chosen_track["laps"])  # randomly choose a lap for the safety car
        else:
            safety_car_lap = None  # no safety car
    
-       stimulate_result = simulate_race(strategy, rng, safety_car_lap)
-       result.append(stimulate_result)   # call simulate
+       stimulation_result = simulate_race(strategy, rng, chosen_track, safety_car_lap)
+       result.append(stimulation_result)   # call simulate
 
    return result
 
@@ -51,3 +52,13 @@ def summarize(name, results):
        "percentile": percentile_range
       
    }
+
+
+"""
+choosen_track = TRACKS["Madring"]
+Startegy = [("Medium", 20), ("Hard", 37)]
+stop1 = run_monte_carlo(Startegy, choosen_track, n_simulations=10, safety_car_probability=0.25, seed=None)
+print(len(stop1))
+print(summarize('1-stop', stop1))
+"""
+

@@ -7,7 +7,7 @@ the top. Same pattern as tires.py: tiny numbered pieces (2.1, 2.2, 2.3...)
 with something to run and check after each.
 """
 from tires import COMPOUNDS, lap_time
-from tracks import TRACK
+from tracks import TRACKS
 
 import random
 
@@ -21,13 +21,18 @@ rng = random.Random(0)  # a controlled source of randomness, seeded with 0
 
 
 
-PIT_STOP_MEAN = 22.0 #the average time it takes to make a pit stop, in seconds
+#PIT_STOP_MEAN = 22.0 #the average time it takes to make a pit stop, in seconds
 
-PIT_STOP_STDDEV = 1.5 #the standard deviation of the pit stop time, in seconds
+#PIT_STOP_STDDEV = 1.5 #the standard deviation of the pit stop time, in seconds
 
 def simulate_race(strategy, rng, chosen_track, safety_car_lap=None, ):
     total_time = 0.0 # time when the race starrs at 0.0 seconds 
     race_lap = 0 # the lap number of the race, starting at 0
+
+    if chosen_track["pit_loss_mean"] is None:
+        pit_loss_mean = 22.0
+    else:
+        pit_loss_mean = chosen_track["pit_loss_mean"]
     
     for i, (compound_name, stint_length) in enumerate(strategy): # a for loop to iterate through the strategy list
         compound = COMPOUNDS[compound_name] # a variable that refrences the compound dictionary in tires.py from the tulpe in stratgey 
@@ -40,9 +45,9 @@ def simulate_race(strategy, rng, chosen_track, safety_car_lap=None, ):
         is_last_stint = (i == len(strategy) - 1) # a variable that checks if the current stint is the last stint in the strategy list
         if not is_last_stint: # if the current stint is not the last stint in the strategy list, add a pit stop time to the total time
             if  safety_car_lap is not None and abs(race_lap - safety_car_lap) <= 2: # if the current lap is the same as the safety car lap, add a pit stop time to the total time
-                pit_stop_time = rng.gauss(PIT_STOP_MEAN / 2, PIT_STOP_STDDEV) # a variable that generates a random pit stop time using a Gaussian distribution with half the mean and the standard deviation defined above
+                pit_stop_time = rng.gauss(pit_loss_mean / 2, chosen_track["pit_loss_stddev"]) # a variable that generates a random pit stop time using a Gaussian distribution with half the mean and the standard deviation defined above
             else: # if the current lap is not the same as the safety car lap, add a pit stop time to the total time
-                pit_stop_time = rng.gauss(PIT_STOP_MEAN, PIT_STOP_STDDEV) # a variable that generates a random pit stop time using a Gaussian distribution with the mean and standard deviation defined above
+                pit_stop_time = rng.gauss(pit_loss_mean, chosen_track["pit_loss_stddev"]) # a variable that generates a random pit stop time using a Gaussian distribution with the mean and standard deviation defined above
             total_time += pit_stop_time # adds the pit stop time to the total time
           
     laps_match = race_lap == chosen_track["laps"]
@@ -54,8 +59,8 @@ def simulate_race(strategy, rng, chosen_track, safety_car_lap=None, ):
         return total_time
 
 
-#print(simulate_race([("Hard", 3),("Medium", 25), ("Medium", 25)], rng, TRACK["Monza GP"])) # a list of tuples that represent the tire compound and the number of laps to run on that compound
-#print(simulate_race([("Medium", 3), ("Hard", 50)], rng, TRACK["Monza GP"]))
+#print(simulate_race([("Hard", 3),("Medium", 25), ("Medium", 25)], rng, TRACKS["Italy"])) # a list of tuples that represent the tire compound and the number of laps to run on that compound
+#print(simulate_race([("Medium", 3), ("Hard", 50)], rng, TRACKS["Italy"]))
 
 
 # --- Step 2.5 will wrap that script into a reusable simulate_race()

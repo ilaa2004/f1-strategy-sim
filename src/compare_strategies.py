@@ -13,10 +13,11 @@ Run: python compare_strategies.py
 import matplotlib.pyplot as plt
 
 from monte_carlo import run_monte_carlo, summarize
+from tracks import TRACKS
 
 # TODO: define at least two candidate strategies to compare, e.g. a 1-stop
 # and a 2-stop. Make sure the lap counts in each strategy sum to the same
-# total (so comparisons are fair) — pick a race distance, e.g. 58 laps.
+# total (so comparisons are fair) — pick a race distance, e.g. 57 laps.
 STRATEGIES = {
      "1-stop (Medium/Hard)": [("Medium", 3), ("Hard", 50)],
      "2-stop (Medium/Hard/Medium)": [("Medium", 3), ("Hard", 25), ("Medium", 25)],
@@ -31,8 +32,8 @@ def main():
    
     #   1. For each strategy: run_monte_carlo(), store results, print
     #      summarize() output.
-        stat1_results = run_monte_carlo(STRATEGIES["1-stop (Medium/Hard)"], n_simulations=N_SIMULATIONS)
-        stat2_results = run_monte_carlo(STRATEGIES["2-stop (Medium/Hard/Medium)"], n_simulations=N_SIMULATIONS)
+        stat1_results = run_monte_carlo(STRATEGIES["1-stop (Medium/Hard)"], n_simulations=N_SIMULATIONS, chosen_track=TRACKS["Italy"], safety_car_probability=0.25, seed=None)
+        stat2_results = run_monte_carlo(STRATEGIES["2-stop (Medium/Hard/Medium)"], n_simulations=N_SIMULATIONS, chosen_track=TRACKS["Italy"], safety_car_probability=0.25, seed=None)
 
         print(summarize('1-stop', stat1_results))
         print(summarize('2-stop', stat2_results))
