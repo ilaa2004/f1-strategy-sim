@@ -15,22 +15,21 @@ import statistics
 from race import simulate_race
 from tracks import TRACKS
 
-
 def run_monte_carlo(strategy, chosen_track, n_simulations=5000, safety_car_probability=0.25, seed=None):
-   rng= random.Random(seed)  # a controlled source of randomness, seeded with seed
-   result = []
+    rng = random.Random(seed)
+    result = []
 
-   for n in range(n_simulations):
-       safety_car_happens = rng.random() < safety_car_probability
-       if safety_car_happens:
-           safety_car_lap = rng.randint(1, chosen_track["laps"])  # randomly choose a lap for the safety car
-       else:
-           safety_car_lap = None  # no safety car
-   
-       stimulation_result = simulate_race(strategy, rng, chosen_track, safety_car_lap)
-       result.append(stimulation_result)   # call simulate
+    for n in range(n_simulations):
+        safety_car_happens = rng.random() < safety_car_probability
+        if safety_car_happens:
+            safety_car_lap = rng.randint(1, chosen_track["laps"] - 1)
+        else:
+            safety_car_lap = None
 
-   return result
+        stimulate_result = simulate_race(strategy, rng, chosen_track, safety_car_lap)
+        result.append(stimulate_result)
+
+    return result
 
 
 def summarize(name, results):
