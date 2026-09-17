@@ -14,13 +14,15 @@ import matplotlib.pyplot as plt
 
 from monte_carlo import run_monte_carlo, summarize
 from tracks import TRACKS
+import statistics
+import time
 
 # TODO: define at least two candidate strategies to compare, e.g. a 1-stop
 # and a 2-stop. Make sure the lap counts in each strategy sum to the same
 # total (so comparisons are fair) — pick a race distance, e.g. 57 laps.
 STRATEGIES = {
-     "1-stop (Medium/Hard)": [("Medium", 3), ("Hard", 50)],
-     "2-stop (Medium/Hard/Medium)": [("Medium", 3), ("Hard", 25), ("Medium", 25)],
+     "Kimis start)": [("Medium", 14), ("Hard", 43)],
+     "Georges start": [("Hard", 14), ("Medium", 14), ("Hard", 29)],
 }
 
 N_SIMULATIONS = 5000
@@ -32,8 +34,10 @@ def main():
    
     #   1. For each strategy: run_monte_carlo(), store results, print
     #      summarize() output.
-        stat1_results = run_monte_carlo(STRATEGIES["1-stop (Medium/Hard)"], n_simulations=N_SIMULATIONS, chosen_track=TRACKS["Italy"], safety_car_probability=0.25, seed=None)
-        stat2_results = run_monte_carlo(STRATEGIES["2-stop (Medium/Hard/Medium)"], n_simulations=N_SIMULATIONS, chosen_track=TRACKS["Italy"], safety_car_probability=0.25, seed=None)
+        chosen_track=TRACKS["Madring"]
+
+        stat1_results = run_monte_carlo(STRATEGIES["Kimis start)"], n_simulations=N_SIMULATIONS, chosen_track=chosen_track, safety_car_probability=0.25, seed=None)
+        stat2_results = run_monte_carlo(STRATEGIES["Georges start"], n_simulations=N_SIMULATIONS, chosen_track=chosen_track, safety_car_probability=0.25, seed=None)
 
         print(summarize('1-stop', stat1_results))
         print(summarize('2-stop', stat2_results))
@@ -46,18 +50,25 @@ def main():
             else:
                 stat2_wins += 1
 
-        print(f"1-stop wins: {stat1_wins}")
-        print(f"2-stop wins: {stat2_wins}")        
+        print(f"Kimis: {stat1_wins}")
+        print(f"Georges: {stat2_wins}")    
+
+        Kimis_best = time.strftime("%H:%M:%S", time.gmtime(min(stat1_results)))
+        Georges_best = time.strftime("%H:%M:%S", time.gmtime(min(stat2_results)))
+
+        print(f"kimis best time: {Kimis_best}")
+        print(f"georges best time: {Georges_best}")    
     #   3. Plot overlapping histograms of each strategy's results with
     #      matplotlib and save to strategy_comparison.png.
         ax = plt.subplot(111)
-        ax.hist(stat1_results, bins=50, alpha=0.5, label="1-stop (Medium/Hard)")
-        ax.hist(stat2_results, bins=50, alpha=0.5, label="2-stop (Medium/Hard/Medium)")
+        ax.hist(stat1_results, bins=50, alpha=0.5, label="Kimis start (Medium/Hard)")
+        ax.hist(stat2_results, bins=50, alpha=0.5, label="Georges start (Hard/Medium/Hard)")
         ax.set_xlabel("Race Time (seconds)")
         ax.set_ylabel("Frequency")
         ax.set_title("Race Time Distribution by Strategy")
         ax.legend()
-        plt.savefig("strategy_comparison.png")  
+        plt.savefig("strategy_comparison.png") 
+       
         
 
 

@@ -11,6 +11,7 @@ See GUIDE.md "Step 3" before writing this — it explains why we do this
 
 import random
 import statistics
+import time
 
 from race import simulate_race
 from tracks import TRACKS
@@ -38,6 +39,9 @@ def summarize(name, results):
    median_time = statistics.median(results)
    std_time = statistics.stdev(results)  
 
+
+   time_string = time.strftime("%H:%M:%S", time.gmtime(min(results)))
+
    p10 = sorted(results)[int(0.10 * len(results))]  # 10th percentile
    p90 = sorted(results)[int(0.90 * len(results))]  # 90th percentile
    percentile_range = p90 / p10
@@ -48,16 +52,18 @@ def summarize(name, results):
        "std": std_time,
        "p10": p10,
        "p90": p90,
-       "percentile": percentile_range
+       "percentile": percentile_range,
+       "best": time_string
+
       
    }
 
 
-"""
+
 choosen_track = TRACKS["Madring"]
-Startegy = [("Medium", 20), ("Hard", 37)]
+Startegy = [("Hard", 14), ("Medium", 14), ("Hard", 29)]
 stop1 = run_monte_carlo(Startegy, choosen_track, n_simulations=10, safety_car_probability=0.25, seed=None)
 print(len(stop1))
 print(summarize('1-stop', stop1))
-"""
+
 

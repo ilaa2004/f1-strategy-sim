@@ -27,9 +27,31 @@ while.
 #     just one compound.
 # --- Step 1.5 will add randomness (this is the part that makes it a
 #     "Monte Carlo" simulation later).
-SOFT = {"name": "Soft", "base_lap_time": 92.0, "degradation_per_lap": 0.15}
-MEDIUM = {"name": "Medium", "base_lap_time": 93.0, "degradation_per_lap": 0.10}
-HARD = {"name": "Hard", "base_lap_time": 94.0, "degradation_per_lap": 0.05}
+SOFT = { "name": "Soft", 
+         "base_lap_time": 92.0, 
+         "degradation_per_lap": 0.15, 
+         "cliff_age": 15, 
+         "cliff_degradation_per_lap": 0.45,
+         "warmup_laps": 1,
+         "warmup_degradation_per_lap": 0.8
+
+         }
+MEDIUM = { "name": "Medium", 
+          "base_lap_time": 93.0, 
+          "degradation_per_lap": 0.10, 
+          "cliff_age": 25, 
+          "cliff_degradation_per_lap": 0.30,
+          "warmup_laps": 2,
+          "warmup_degradation_per_lap": 1.0
+          }
+HARD = { "name": "Hard",
+         "base_lap_time": 94.0, 
+         "degradation_per_lap": 0.05,
+         "cliff_age": 35, 
+         "cliff_degradation_per_lap": 0.15,
+         "warmup_laps": 3,
+         "warmup_degradation_per_lap": 1.2
+         }
 
 COMPOUNDS = {
     "Soft": SOFT,
@@ -38,9 +60,24 @@ COMPOUNDS = {
 }
 
 def lap_time(compound, tire_age_laps, rng):
-    predictable_part = compound["base_lap_time"] + compound["degradation_per_lap"] * tire_age_laps
+
+
+    if tire_age_laps <= compound["cliff_age"]:
+        predictable_part = compound["base_lap_time"] + compound["degradation_per_lap"] * tire_age_laps
+    else:
+        predictable_part = compound["base_lap_time"] + compound["degradation_per_lap"] * compound["cliff_age"] + compound["cliff_degradation_per_lap"] * (tire_age_laps - compound["cliff_age"])
+
+      # Tyre warm-up
+    if tire_age_laps < compound["warmup_laps"]:
+        warmup_extra = compound["warmup_degradation_per_lap"] * (1 - tire_age_laps / compound["warmup_laps"])
+    else:
+        warmup_extra = 0.0
+
+
+    predictable_part += warmup_extra
     noise_size = 0.02 * max(tire_age_laps, 1) # Standard deviation of the noise
     noise = rng.gauss(0, noise_size)  # Generate random noise
+
     return predictable_part + noise  # Add noise to the predictable part
     #first perameter refrence back to the dictionary for the 
     #base lap time and degrataion, and lap age is written by the user to determine 
@@ -51,4 +88,5 @@ def lap_time(compound, tire_age_laps, rng):
 #a controlled source of randomness, seeded with 0
 #print(rng.gauss(0, 1))
 #a random number centered on 0, "spread" of 1
+
 
